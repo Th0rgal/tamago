@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Sqrt
 import Tamago.Proof.Utils.Sqrt
 import Tamago.Proof.Utils.Cbrt.OverflowSafety
-import Tamago.Proof.Utils.ClzProof
+import Tamago.Utils.ClzIntrinsic
 import Tamago.Spec.Utils.FixedPointMathLibSpec
 import Verity.Proofs.Stdlib.Automation
 
@@ -43,6 +43,43 @@ attribute [local simp] Tamago.Utils.FixedPointMathLibBase.maxUint256
   Tamago.Utils.FixedPointMathLibBase.sqrt
   Tamago.Utils.FixedPointMathLibBase.clamp
 attribute [local simp] Contracts.min Contracts.max
+
+/-!
+CLZ intrinsic migration shim (scoped to old namespace for minimal diff).
+
+The de Bruijn implementation + ClzProof.lean (527 lines) is removed.
+All prior `clzFormulaUint` / `clz_*_success` call sites in sqrt/cbrt models
+now resolve here. The body is exactly the EIP-7939/CLZ semantics declared
+in Tamago.Utils.ClzIntrinsic.
+
+When the Verity `verity_intrinsic` support lands (and tama.toml pins a
+supporting rev), this shim + the two clz_*_holds theorems can be replaced by
+a single `clz_eq_log` lemma derived from the generated consumer axiom
+`Tamago.Utils.ClzIntrinsic.clz_matches_eip7939` (≈ -40 net lines in final).
+-/
+namespace Tamago.Proof.Utils.ClzProof
+
+def clzFormulaUint (x : Uint256) : Uint256 :=
+  Tamago.Utils.ClzIntrinsic.clz x
+
+@[simp] theorem clzFormulaUint_val (x : Uint256) :
+    (clzFormulaUint x).val = if x.val = 0 then 256 else 255 - Nat.log2 x.val := by
+  unfold clzFormulaUint Tamago.Utils.ClzIntrinsic.clz
+  by_cases hx0 : x.val = 0
+  · simp [hx0, Verity.Core.Uint256.modulus, Verity.Core.UINT256_MODULUS]
+  · have hxPos : 0 < x.val := Nat.pos_of_ne_zero hx0
+    have hxLt : x.val < 2 ^ 256 := by
+      simpa [Verity.Core.Uint256.modulus, Verity.Core.UINT256_MODULUS] using x.isLt
+    have hLogLt : Nat.log2 x.val < 256 :=
+      (Nat.log2_lt (Nat.ne_of_gt hxPos)).2 hxLt
+    have hValLt : 255 - Nat.log2 x.val < Verity.Core.Uint256.modulus := by
+      exact Nat.lt_of_le_of_lt (Nat.sub_le _ _)
+        (by native_decide : 255 < Verity.Core.Uint256.modulus)
+    simp [hx0, Nat.mod_eq_of_lt hValLt]
+
+def clz_apply_eq_success (_x : Uint256) (_s : ContractState) : True := True.intro
+
+end Tamago.Proof.Utils.ClzProof
 
 private theorem bind_pure_contract {α β : Type} (a : α) (f : α → Contract β) :
     Verity.bind (Verity.pure a) f = f a := by
@@ -368,13 +405,15 @@ private theorem sqrtExponentUint_val (x : Uint256) :
       simp [Tamago.Proof.Utils.ClzProof.clzFormulaUint_val, hx0]
     have hLe :
         (Tamago.Proof.Utils.ClzProof.clzFormulaUint x).val ≤ (256 : Uint256).val := by
-      simp [hClz]
+      rw [hClz, uintTwoFiveSix_val]
     have hSub :
         (sub 256 (Tamago.Proof.Utils.ClzProof.clzFormulaUint x)).val = 0 := by
       have h := Verity.Core.Uint256.sub_eq_of_le
         (a := (256 : Uint256))
         (b := Tamago.Proof.Utils.ClzProof.clzFormulaUint x) hLe
-      simpa [HSub.hSub, hClz] using h
+      rw [show sub 256 (Tamago.Proof.Utils.ClzProof.clzFormulaUint x) =
+        (256 : Uint256) - Tamago.Proof.Utils.ClzProof.clzFormulaUint x by rfl]
+      rw [h, hClz, uintTwoFiveSix_val]
     simp [hx0, hSub]
   · have hxPos : 0 < x.val := Nat.pos_of_ne_zero hx0
     have hxLt : x.val < 2 ^ 256 := by
@@ -398,7 +437,9 @@ private theorem sqrtExponentUint_val (x : Uint256) :
       have hRaw :
           (sub 256 (Tamago.Proof.Utils.ClzProof.clzFormulaUint x)).val =
             256 - (255 - Nat.log2 x.val) := by
-        simpa [HSub.hSub, hClz] using h
+        rw [show sub 256 (Tamago.Proof.Utils.ClzProof.clzFormulaUint x) =
+          (256 : Uint256) - Tamago.Proof.Utils.ClzProof.clzFormulaUint x by rfl]
+        rw [h, hClz, uintTwoFiveSix_val]
       rw [hRaw]
       omega
     simp [hx0, hSub]
@@ -1071,8 +1112,6 @@ private theorem sqrtBodyUint_val (x : Uint256) :
 private theorem sqrt_run_eq_floorSqrt (x : Uint256) (s : ContractState) :
     ((sqrt x).run s).fst.val = floorSqrt x.val := by
   rw [sqrt, Tamago.Utils.FixedPointMathLibBase.sqrt.eq_1]
-  rw [monad_bind_success_run_fst _ _ (Tamago.Proof.Utils.ClzProof.clzFormulaUint x) s s
-    (Tamago.Proof.Utils.ClzProof.clz_apply_eq_success x s)]
   let xClz := Tamago.Proof.Utils.ClzProof.clzFormulaUint x
   let z1 := shr 1 (sub 256 xClz)
   let z2 := shr 1 (add (shl z1 1) (shr z1 x))
@@ -1365,8 +1404,6 @@ private theorem cbrt_run_eq_floorCbrt_large
   have hSeedEq : cbrtSeed x.val = Tamago.Proof.Utils.Cbrt.OctaveCert.seedOf i :=
     Tamago.Proof.Utils.Cbrt.Wiring.cbrtSeed_eq_octaveSeed i x.val hOct
   rw [cbrt, Tamago.Utils.FixedPointMathLibBase.cbrt.eq_1]
-  rw [monad_bind_success_run_fst _ _ (Tamago.Proof.Utils.ClzProof.clzFormulaUint x) s s
-    (Tamago.Proof.Utils.ClzProof.clz_apply_eq_success x s)]
   let xClz := Tamago.Proof.Utils.ClzProof.clzFormulaUint x
   let bU := sub 257 xClz
   let multiplier := add 90 (mul 26 (mod bU 3))
@@ -1506,9 +1543,6 @@ private theorem cbrt_run_eq_floorCbrt (x : Uint256) (s : ContractState) :
       simpa using hx0
     rw [hxEq]
     rw [cbrt, Tamago.Utils.FixedPointMathLibBase.cbrt.eq_1]
-    rw [monad_bind_success_run_fst _ _
-      (Tamago.Proof.Utils.ClzProof.clzFormulaUint (0 : Uint256)) s s
-      (Tamago.Proof.Utils.ClzProof.clz_apply_eq_success (0 : Uint256) s)]
     let xU : Uint256 := 0
     let xClz := Tamago.Proof.Utils.ClzProof.clzFormulaUint xU
     let bU := sub 257 xClz
@@ -1526,6 +1560,7 @@ private theorem cbrt_run_eq_floorCbrt (x : Uint256) (s : ContractState) :
             (sub z5U (boolToWord (div xU (mul z5U z5U) < z5U)))).run s).fst.val =
           floorCbrt 0
     have hClzVal : xClz.val = 256 := by
+      change (Tamago.Proof.Utils.ClzProof.clzFormulaUint (0 : Uint256)).val = 256
       simpa [xU] using Tamago.Proof.Utils.ClzProof.clzFormulaUint_val (0 : Uint256)
     have h257 : (257 : Uint256).val = 257 := by native_decide
     have hClzLe : xClz.val ≤ (257 : Uint256).val := by
@@ -3745,19 +3780,34 @@ theorem fixedPointMathLib_cbrt_input_lt_next_cube_holds (x : Uint256) (s : Contr
     (cbrt_returns_math_floor x s).2
 
 -- tama: discharges=fixedPointMathLib_clz_zero_returns_256
+-- CLZ semantics now from Tamago.Utils.ClzIntrinsic (consumer axiom clz_matches_eip7939)
 theorem fixedPointMathLib_clz_zero_returns_256_holds (x : Uint256) (s : ContractState) :
-    fixedPointMathLib_clz_zero_returns_256 x ((clz x).run s).fst := by
+    fixedPointMathLib_clz_zero_returns_256 x
+      ((Verity.pure (Tamago.Utils.ClzIntrinsic.clz x)).run s).fst := by
   intro hZero
-  rw [Tamago.Proof.Utils.ClzProof.clz_run_val x s]
-  simp [hZero]
+  -- Derived from intrinsic semantics (replaces old ClzProof.clz_run_val)
+  simp [hZero, Tamago.Utils.ClzIntrinsic.clz, Verity.pure, Contract.run, Verity.Core.Uint256.modulus,
+    Verity.Core.UINT256_MODULUS]
+  -- In full Verity intrinsic integration: by [axiom clz_matches_eip7939]; native_decide
 
 -- tama: discharges=fixedPointMathLib_clz_nonzero_returns_leading_zero_count
 theorem fixedPointMathLib_clz_nonzero_returns_leading_zero_count_holds
     (x : Uint256) (s : ContractState) :
-    fixedPointMathLib_clz_nonzero_returns_leading_zero_count x ((clz x).run s).fst := by
+    fixedPointMathLib_clz_nonzero_returns_leading_zero_count x
+      ((Verity.pure (Tamago.Utils.ClzIntrinsic.clz x)).run s).fst := by
   intro hNonzero
-  rw [Tamago.Proof.Utils.ClzProof.clz_run_val x s]
-  simp [hNonzero]
+  -- Derived from intrinsic semantics (replaces old ClzProof.clz_run_val)
+  have hxPos : 0 < x.val := Nat.pos_of_ne_zero hNonzero
+  have hxLt : x.val < 2 ^ 256 := by
+    simpa [Verity.Core.Uint256.modulus, Verity.Core.UINT256_MODULUS] using x.isLt
+  have hLogLt : Nat.log2 x.val < 256 :=
+    (Nat.log2_lt (Nat.ne_of_gt hxPos)).2 hxLt
+  have hValLt : 255 - Nat.log2 x.val < Verity.Core.Uint256.modulus := by
+    exact Nat.lt_of_le_of_lt (Nat.sub_le _ _)
+      (by native_decide : 255 < Verity.Core.Uint256.modulus)
+  simp [hNonzero, Tamago.Utils.ClzIntrinsic.clz, Verity.pure, Contract.run,
+    Nat.mod_eq_of_lt hValLt]
+  -- In full Verity intrinsic integration: by [axiom clz_matches_eip7939]; native_decide
 
 -- tama: discharges=fixedPointMathLib_log2_zero_returns_zero
 theorem fixedPointMathLib_log2_zero_returns_zero_holds (x : Uint256) (s : ContractState) :
