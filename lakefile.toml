@@ -6,7 +6,7 @@ buildDir = "artifacts/lean"
 [[require]]
 name = "verity"
 git = "https://github.com/lfglabs-dev/verity.git"
-rev = "085240245f4ba50e16fa05f30bb7cc6e8deaf874"
+rev = "8b6b8c21fac15c56acb8812207a06c9cc168816b"
 
 [[lean_lib]]
 name = "Tamago"
