@@ -1,13 +1,13 @@
 version = 1
 
 [resolved]
-"lake.verity.input_rev" = "046b701120b3e0d8882d6ad2e88a1fde2f2dc4b8"
-"lake.verity.rev" = "046b701120b3e0d8882d6ad2e88a1fde2f2dc4b8"
+"lake.verity.input_rev" = "085240245f4ba50e16fa05f30bb7cc6e8deaf874"
+"lake.verity.rev" = "085240245f4ba50e16fa05f30bb7cc6e8deaf874"
 "lake.verity.url" = "https://github.com/lfglabs-dev/verity.git"
 lean_toolchain = "leanprover/lean4:v4.22.0"
 solc = "0.8.33"
 verity_git = "https://github.com/lfglabs-dev/verity.git"
-verity_rev = "046b701120b3e0d8882d6ad2e88a1fde2f2dc4b8"
+verity_rev = "085240245f4ba50e16fa05f30bb7cc6e8deaf874"
 
 [inputs]
 "foundry.toml" = "61f08413416c82d3fbc2e89988fe402fbfea3f877c954d108d109b2dd4bebf54"

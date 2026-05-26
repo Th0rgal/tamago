@@ -19,6 +19,13 @@ namespace Tamago.Utils.ClzIntrinsic
 open Verity
 open Verity.EVM.Uint256
 
-verity_intrinsic clz (x : Uint256) : Uint256 where pure; yul := verbatim 1 1 (hex "1e"); min_fork := fusaka; semantics := (fun x => ofNat (if x.toNat = 0 then 256 else 255 - Nat.log2 x.toNat)); obligation [clz_matches_eip7939 := assumed "EIP-7939 CLZ opcode; chain must be Fusaka+"]
+def clzLowering : Verity.Core.Intrinsics.YulLowering :=
+  .verbatim 1 1 "1e"
+
+verity_intrinsic clz (x : Uint256) : Uint256 where pure; yul := verbatim 1 1 (hex "1e"); min_fork := fusaka; semantics := (fun x => Verity.Core.Uint256.ofNat (if x.val = 0 then 256 else 255 - Nat.log2 x.val)); obligation [clz_matches_eip7939 := assumed "EIP-7939 CLZ opcode; chain must be Fusaka+"]
+
+macro_rules
+  | `(intrinsic "clz" $_lowering:term [ $arg:term ]) =>
+      `(Tamago.Utils.ClzIntrinsic.clz $arg)
 
 end Tamago.Utils.ClzIntrinsic

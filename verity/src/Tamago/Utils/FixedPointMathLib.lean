@@ -6,14 +6,6 @@ namespace Tamago.Utils
 open Verity hiding pure bind
 open Contracts
 open Verity.EVM.Uint256 hiding byte
--- Open the intrinsic module so that bare `clz` is in scope for the verity_contract
--- body terms below. This is REQUIRED for the minimal Verity translator's
--- syntax pattern-match `(term| clz $arg:term)` (Verity/Macro/Translate.lean:4113)
--- to lower calls inside sqrt/cbrt to the intrinsic (verbatim_1i_1o(hex"1e", ...)).
--- Without this open (or a same-file declaration), the bare identifier `clz`
--- would fail to parse now that the `function pure clz` declaration has been
--- removed from this contract. This is the intended cross-module use-site
--- pattern once the Verity pin supports `verity_intrinsic`.
 open Tamago.Utils.ClzIntrinsic
 
 /-
@@ -97,13 +89,11 @@ verity_contract FixedPointMathLibBase where
   @return Number of zero bits before the most significant set bit, or 256 for zero.
   -/
   -- NOTE (VERIFICATION): `function pure clz` deleted from this verity_contract
-  -- (see Tamago diff). sqrt/cbrt bodies use bare `clz x` expression calls.
-  -- These now resolve via the `open Tamago.Utils.ClzIntrinsic` at file scope
-  -- (required for Verity's syntax-level `(term| clz ...)` match in translator).
-  -- This pattern compiles with Verity intrinsic-supporting branch.
-  -- The old de Bruijn body + constants were removed; semantics via EIP-7939
-  -- intrinsic (consumer axiom Tamago.Utils.ClzIntrinsic.clz_matches_eip7939).
-  -- Call sites inside contract body continue to work under the open.
+  -- (see Tamago diff). sqrt/cbrt bodies use Verity's explicit `intrinsic`
+  -- expression form with the consumer-owned CLZ lowering descriptor.
+  -- The old de Bruijn body + constants were removed; Lean proofs use
+  -- Tamago.Utils.ClzIntrinsic.clz semantics, while generated Yul uses
+  -- Tamago.Utils.ClzIntrinsic.clzLowering.
 
   /-
   @notice Computes the integer square root.
@@ -117,7 +107,7 @@ verity_contract FixedPointMathLibBase where
     steps yield 2⁻¹⁶⁰ relative error (>128 correct bits). We implicitly
     represent z₀ as log₂(z) so that the first `div` becomes a `shr`.
     -/
-    let xClz := clz x
+    let xClz := intrinsic "clz" clzLowering [x]
     let mut z := shr 1 (sub 256 xClz)
     z := shr 1 (add (shl z 1) (shr z x))
     z := shr 1 (add z (div x z))
@@ -144,7 +134,7 @@ verity_contract FixedPointMathLibBase where
     % 3` to balance each octave's worst-case final error. This gives >94 bits of
     precision after only 5 Newton-Raphson iterations.
     -/
-    let xClz := clz x
+    let xClz := intrinsic "clz" clzLowering [x]
     let b := sub 257 xClz
     let mut z := shr 7 (shl (div b 3) (add 90 (mul 26 (mod b 3))))
     z := div (add (add (div x (mul z z)) z) z) 3
