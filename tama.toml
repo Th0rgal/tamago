@@ -1,6 +1,6 @@
 [project]
 name = "tamago"
-verity = "968c8fc64c875f85271dff2c363276cab7bb2783"
+verity = "a1df2be9c266cef78e4bdc90fed833a0febb719c"
 
 [paths]
 src = "verity/src"
