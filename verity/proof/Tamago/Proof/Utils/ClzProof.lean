@@ -5,7 +5,7 @@ This file (the original 527-line de Bruijn sequence CLZ implementation + full
 proof of equivalence to the log2 formula) has been retired from active use.
 
 The canonical CLZ is now declared in:
-  verity/src/Tamago/Utils/ClzIntrinsic.lean
+  verity/common/Tamago/Common/ClzIntrinsic.lean
 
 All call sites and proof references have been migrated to a thin compatibility
 shim in FixedPointMathLibProof.lean (or updated directly for the spec holds).
@@ -18,7 +18,7 @@ See git history for the full original proof if needed for audit.
 The key superseded theorem was `clzScanNat_eq_logScan` / `clz_run_val`.
 -/
 
-import Tamago.Utils.ClzIntrinsic
+import Tamago.Common.ClzIntrinsic
 
 namespace Tamago.Proof.Utils.ClzProof
 

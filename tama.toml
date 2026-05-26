@@ -1,6 +1,6 @@
 [project]
 name = "tamago"
-verity = "8b6b8c21fac15c56acb8812207a06c9cc168816b"
+verity = "cd21d788914d564c3d97121db9e90a51b95cdb70"
 
 [paths]
 src = "verity/src"
@@ -20,7 +20,7 @@ solc = "0.8.33"
 optimizer = true
 optimizer_runs = 200
 yul_optimizer = true
-evm_version = "cancun"
+evm_version = "osaka"
 metadata_bytecode_hash = "none"
 
 [trust.allow_axioms]

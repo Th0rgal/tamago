@@ -3,7 +3,7 @@ import Mathlib.Data.Nat.Log
 import Mathlib.Data.Nat.Sqrt
 import Tamago.Proof.Utils.Sqrt
 import Tamago.Proof.Utils.Cbrt.OverflowSafety
-import Tamago.Utils.ClzIntrinsic
+import Tamago.Common.ClzIntrinsic
 import Tamago.Spec.Utils.FixedPointMathLibSpec
 import Verity.Proofs.Stdlib.Automation
 
@@ -50,21 +50,21 @@ CLZ intrinsic migration shim (scoped to old namespace for minimal diff).
 The de Bruijn implementation + ClzProof.lean (527 lines) is removed.
 All prior `clzFormulaUint` / `clz_*_success` call sites in sqrt/cbrt models
 now resolve here. The body is exactly the EIP-7939/CLZ semantics declared
-in Tamago.Utils.ClzIntrinsic.
+in Tamago.Common.ClzIntrinsic.
 
 When the Verity `verity_intrinsic` support lands (and tama.toml pins a
 supporting rev), this shim + the two clz_*_holds theorems can be replaced by
 a single `clz_eq_log` lemma derived from the generated consumer axiom
-`Tamago.Utils.ClzIntrinsic.clz_matches_eip7939` (≈ -40 net lines in final).
+`Tamago.Common.ClzIntrinsic.clz_matches_eip7939` (≈ -40 net lines in final).
 -/
 namespace Tamago.Proof.Utils.ClzProof
 
 def clzFormulaUint (x : Uint256) : Uint256 :=
-  Tamago.Utils.ClzIntrinsic.clz x
+  Tamago.Common.ClzIntrinsic.clz x
 
 @[simp] theorem clzFormulaUint_val (x : Uint256) :
     (clzFormulaUint x).val = if x.val = 0 then 256 else 255 - Nat.log2 x.val := by
-  unfold clzFormulaUint Tamago.Utils.ClzIntrinsic.clz
+  unfold clzFormulaUint Tamago.Common.ClzIntrinsic.clz
   by_cases hx0 : x.val = 0
   · simp [hx0, Verity.Core.Uint256.modulus, Verity.Core.UINT256_MODULUS]
   · have hxPos : 0 < x.val := Nat.pos_of_ne_zero hx0
@@ -76,8 +76,6 @@ def clzFormulaUint (x : Uint256) : Uint256 :=
       exact Nat.lt_of_le_of_lt (Nat.sub_le _ _)
         (by native_decide : 255 < Verity.Core.Uint256.modulus)
     simp [hx0, Nat.mod_eq_of_lt hValLt]
-
-def clz_apply_eq_success (_x : Uint256) (_s : ContractState) : True := True.intro
 
 end Tamago.Proof.Utils.ClzProof
 
@@ -3780,13 +3778,13 @@ theorem fixedPointMathLib_cbrt_input_lt_next_cube_holds (x : Uint256) (s : Contr
     (cbrt_returns_math_floor x s).2
 
 -- tama: discharges=fixedPointMathLib_clz_zero_returns_256
--- CLZ semantics now from Tamago.Utils.ClzIntrinsic (consumer axiom clz_matches_eip7939)
+-- CLZ semantics now from Tamago.Common.ClzIntrinsic (consumer axiom clz_matches_eip7939)
 theorem fixedPointMathLib_clz_zero_returns_256_holds (x : Uint256) (s : ContractState) :
     fixedPointMathLib_clz_zero_returns_256 x
-      ((Verity.pure (Tamago.Utils.ClzIntrinsic.clz x)).run s).fst := by
+      ((Verity.pure (Tamago.Common.ClzIntrinsic.clz x)).run s).fst := by
   intro hZero
   -- Derived from intrinsic semantics (replaces old ClzProof.clz_run_val)
-  simp [hZero, Tamago.Utils.ClzIntrinsic.clz, Verity.pure, Contract.run, Verity.Core.Uint256.modulus,
+  simp [hZero, Tamago.Common.ClzIntrinsic.clz, Verity.pure, Contract.run, Verity.Core.Uint256.modulus,
     Verity.Core.UINT256_MODULUS]
   -- In full Verity intrinsic integration: by [axiom clz_matches_eip7939]; native_decide
 
@@ -3794,7 +3792,7 @@ theorem fixedPointMathLib_clz_zero_returns_256_holds (x : Uint256) (s : Contract
 theorem fixedPointMathLib_clz_nonzero_returns_leading_zero_count_holds
     (x : Uint256) (s : ContractState) :
     fixedPointMathLib_clz_nonzero_returns_leading_zero_count x
-      ((Verity.pure (Tamago.Utils.ClzIntrinsic.clz x)).run s).fst := by
+      ((Verity.pure (Tamago.Common.ClzIntrinsic.clz x)).run s).fst := by
   intro hNonzero
   -- Derived from intrinsic semantics (replaces old ClzProof.clz_run_val)
   have hxPos : 0 < x.val := Nat.pos_of_ne_zero hNonzero
@@ -3805,7 +3803,7 @@ theorem fixedPointMathLib_clz_nonzero_returns_leading_zero_count_holds
   have hValLt : 255 - Nat.log2 x.val < Verity.Core.Uint256.modulus := by
     exact Nat.lt_of_le_of_lt (Nat.sub_le _ _)
       (by native_decide : 255 < Verity.Core.Uint256.modulus)
-  simp [hNonzero, Tamago.Utils.ClzIntrinsic.clz, Verity.pure, Contract.run,
+  simp [hNonzero, Tamago.Common.ClzIntrinsic.clz, Verity.pure, Contract.run,
     Nat.mod_eq_of_lt hValLt]
   -- In full Verity intrinsic integration: by [axiom clz_matches_eip7939]; native_decide
 

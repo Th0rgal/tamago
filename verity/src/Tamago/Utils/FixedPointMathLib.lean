@@ -1,12 +1,12 @@
 import Contracts.Common
-import Tamago.Utils.ClzIntrinsic
+import Tamago.Common.ClzIntrinsic
 
 namespace Tamago.Utils
 
 open Verity hiding pure bind
 open Contracts
 open Verity.EVM.Uint256 hiding byte
-open Tamago.Utils.ClzIntrinsic
+open Tamago.Common.ClzIntrinsic
 
 /-
 @title FixedPointMathLib
@@ -88,12 +88,8 @@ verity_contract FixedPointMathLibBase where
   @param x Input value.
   @return Number of zero bits before the most significant set bit, or 256 for zero.
   -/
-  -- NOTE (VERIFICATION): `function pure clz` deleted from this verity_contract
-  -- (see Tamago diff). sqrt/cbrt bodies use Verity's explicit forked intrinsic
-  -- expression form with the consumer-owned CLZ lowering descriptor.
-  -- The old de Bruijn body + constants were removed; Lean proofs use
-  -- Tamago.Utils.ClzIntrinsic.clz semantics, while generated Yul uses
-  -- Tamago.Utils.ClzIntrinsic.clzLowering.
+  function pure clz (x : Uint256) : Uint256 := do
+    return (intrinsic_fusaka "clz" clzLowering [x])
 
   /-
   @notice Computes the integer square root.
@@ -428,7 +424,7 @@ abbrev saturatingMul := FixedPointMathLibBase.saturatingMul
 abbrev saturatingSub := FixedPointMathLibBase.saturatingSub
 abbrev dist := FixedPointMathLibBase.dist
 abbrev avg := FixedPointMathLibBase.avg
-abbrev clz := Tamago.Utils.ClzIntrinsic.clz
+abbrev clz := FixedPointMathLibBase.clz
 abbrev sqrt := FixedPointMathLibBase.sqrt
 abbrev cbrt := FixedPointMathLibBase.cbrt
 abbrev log2 := FixedPointMathLibBase.log2

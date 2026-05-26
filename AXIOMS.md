@@ -9,7 +9,7 @@ intrinsics live in the **consumer's namespace** and are auditable via
 
 ## CLZ (EIP-7939) Intrinsic
 
-Declared in: `verity/src/Tamago/Utils/ClzIntrinsic.lean`
+Declared in: `verity/common/Tamago/Common/ClzIntrinsic.lean`
 
 ```lean
 verity_intrinsic clz (x : Uint256) : Uint256 where
@@ -22,7 +22,7 @@ verity_intrinsic clz (x : Uint256) : Uint256 where
 ```
 
 **Generated axiom marker (consumer namespace):**
-- `Tamago.Utils.ClzIntrinsic.clz_matches_eip7939`
+- `Tamago.Common.ClzIntrinsic.clz_matches_eip7939`
 
 **Trust surface (one line):**
 - The EVM executing the deployed bytecode must implement EIP-7939 CLZ

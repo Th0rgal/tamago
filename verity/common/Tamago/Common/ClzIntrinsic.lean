@@ -1,20 +1,22 @@
+import Mathlib.Data.Nat.Log
 import Contracts.Common
+import Verity
 
 /-!
 CLZ (count leading zeros) intrinsic for Tamago.
 
-This replaces the previous 527-line de Bruijn sequence software implementation
-and its proof (ClzProof.lean) with a direct binding to the EIP-7939 CLZ opcode
-(via Verity `verity_intrinsic`).
+This replaces the previous de Bruijn sequence software implementation and its
+proof with a direct binding to the EIP-7939 CLZ opcode (via Verity
+`verity_intrinsic`).
 
 The trust assumption is explicit and consumer-namespaced:
-- `Tamago.Utils.ClzIntrinsic.clz_matches_eip7939`
+- `Tamago.Common.ClzIntrinsic.clz_matches_eip7939`
 
-When EVMYulLean upstream models CLZ (post-fork), this can be upgraded from
-`assumed` to `proved` with no change to this declaration site.
+When EVMYulLean upstream models CLZ, this can be upgraded from `assumed` to
+`proved` with no change to this declaration site.
 -/
 
-namespace Tamago.Utils.ClzIntrinsic
+namespace Tamago.Common.ClzIntrinsic
 
 open Verity
 open Verity.EVM.Uint256
@@ -26,6 +28,6 @@ verity_intrinsic clz (x : Uint256) : Uint256 where pure; yul := verbatim 1 1 (he
 
 macro_rules
   | `(intrinsic_fusaka "clz" $_lowering:term [ $arg:term ]) =>
-      `(Tamago.Utils.ClzIntrinsic.clz $arg)
+      `(Tamago.Common.ClzIntrinsic.clz $arg)
 
-end Tamago.Utils.ClzIntrinsic
+end Tamago.Common.ClzIntrinsic
