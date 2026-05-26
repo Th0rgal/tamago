@@ -1,11 +1,12 @@
 # Tamago — Consumer Axioms
 
 This file registers axioms that Tamago introduces via Verity's `verity_intrinsic`
-mechanism (see plan.md and Verity's `docs/INTRINSICS.md` once available).
+mechanism (see Verity's `docs/INTRINSICS.md`).
 
 Verity itself ships with **zero project-level axioms**. All axioms produced by
 intrinsics live in the **consumer's namespace** and are auditable via
-`--trust-report`.
+this file until Verity's machine-readable intrinsic trust-report rows are
+available.
 
 ## CLZ (EIP-7939) Intrinsic
 
@@ -27,7 +28,7 @@ verity_intrinsic clz (x : Uint256) : Uint256 where
 **Trust surface (one line):**
 - The EVM executing the deployed bytecode must implement EIP-7939 CLZ
   (opcode 0x1e) with the documented semantics.
-- The chain must be at or past the Fusaka hard fork (enforced at link time
+- The chain must be at or past the Fusaka hard fork (enforced at compile time
   by Verity unless `--allow-future-fork-intrinsics` is passed).
 
 **Upgrade path:**
