@@ -1,20 +1,20 @@
 version = 1
 
 [resolved]
-"lake.verity.input_rev" = "cd21d788914d564c3d97121db9e90a51b95cdb70"
-"lake.verity.rev" = "cd21d788914d564c3d97121db9e90a51b95cdb70"
+"lake.verity.input_rev" = "4779da39eb85ca9636aa2e545823e98c3226b8f5"
+"lake.verity.rev" = "4779da39eb85ca9636aa2e545823e98c3226b8f5"
 "lake.verity.url" = "https://github.com/lfglabs-dev/verity.git"
 lean_toolchain = "leanprover/lean4:v4.22.0"
 solc = "0.8.33"
 verity_git = "https://github.com/lfglabs-dev/verity.git"
-verity_rev = "cd21d788914d564c3d97121db9e90a51b95cdb70"
+verity_rev = "4779da39eb85ca9636aa2e545823e98c3226b8f5"
 
 [inputs]
 "foundry.toml" = "61f08413416c82d3fbc2e89988fe402fbfea3f877c954d108d109b2dd4bebf54"
-"lake-manifest.json" = "737778fedfa3f58abf072e7bb0b12677f1ff7aea24415fb3a88bc1a0cda27f51"
-"lakefile.toml" = "2a97ff60fa486ae9b91df6d2dd532e25f15113d498f78b337d93311fe08c7fa3"
+"lake-manifest.json" = "eabba4d5b28bbf3347798a637a66403bb21662cd8659006bba35c8f84b691e8d"
+"lakefile.toml" = "7eebec51c196c3ffd1bbc605ac4d6b3f1131fd80190a2ada6da9fc3dd8978086"
 lean-toolchain = "8f6680f8389e8adee06cb2bd44372c6d60dce0e8301630b61a99a5642d1bd71b"
-"tama.toml" = "36465943095947f53e33faa8b71b1ab199a5c3e72dcaf8920b1ac63a63f6e54e"
+"tama.toml" = "d6c44cb24da52c0a515993fddcd54adf8e00805f732fd6ce7062b1544b852b54"
 "verity/proof/Tamago/Proof.lean" = "b686ebff43522d6598405a8e36d83e11f78dc6518f206878122db5eac00dea69"
 "verity/spec/Tamago/Spec.lean" = "7d6749a149656cd4bc8e4404b9fb911c2cb693038cedd7a59a6e3be523dcb86b"
 "verity/src/Tamago.lean" = "e24d9b1c2ad0e3d37ce959f57ddedc1caa798b0b559bb639bc0be6d39e15d006"
