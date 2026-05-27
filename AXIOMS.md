@@ -16,10 +16,10 @@ Declared in: `verity/common/Tamago/Common/ClzIntrinsic.lean`
 verity_intrinsic clz (x : Uint256) : Uint256 where
   pure
   yul := verbatim 1 1 (hex "1e")
-  min_fork := fusaka
+  min_fork := osaka
   semantics := fun x => ofNat (if x.toNat = 0 then 256 else 255 - Nat.log2 x.toNat)
   obligation [clz_matches_eip7939 :=
-    assumed "EIP-7939 CLZ opcode; chain must be Fusaka+"]
+    assumed "EIP-7939 CLZ opcode; chain must support Osaka+ execution semantics"]
 ```
 
 **Generated axiom marker (consumer namespace):**
@@ -28,7 +28,7 @@ verity_intrinsic clz (x : Uint256) : Uint256 where
 **Trust surface (one line):**
 - The EVM executing the deployed bytecode must implement EIP-7939 CLZ
   (opcode 0x1e) with the documented semantics.
-- The chain must be at or past the Fusaka hard fork (enforced at compile time
+- The chain must support Osaka-or-later execution semantics (enforced at compile time
   by Verity unless `--allow-future-fork-intrinsics` is passed).
 
 **Upgrade path:**

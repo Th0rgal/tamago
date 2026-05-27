@@ -45,17 +45,13 @@ attribute [local simp] Tamago.Utils.FixedPointMathLibBase.maxUint256
 attribute [local simp] Contracts.min Contracts.max
 
 /-!
-CLZ intrinsic migration shim (scoped to old namespace for minimal diff).
+CLZ proof compatibility layer.
 
-The de Bruijn implementation + ClzProof.lean (527 lines) is removed.
-All prior `clzFormulaUint` / `clz_*_success` call sites in sqrt/cbrt models
-now resolve here. The body is exactly the EIP-7939/CLZ semantics declared
-in Tamago.Common.ClzIntrinsic.
-
-When the Verity `verity_intrinsic` support lands (and tama.toml pins a
-supporting rev), this shim + the two clz_*_holds theorems can be replaced by
-a single `clz_eq_log` lemma derived from the generated consumer axiom
-`Tamago.Common.ClzIntrinsic.clz_matches_eip7939` (≈ -40 net lines in final).
+Tamago is pinned to a Verity revision with `verity_intrinsic` support, and the
+canonical CLZ implementation is `Tamago.Common.ClzIntrinsic.clz`. This namespace
+keeps the old `ClzProof.clzFormulaUint` name used by the existing sqrt/cbrt
+proofs, but it is only an alias for the intrinsic semantics. The old de Bruijn
+implementation proof is no longer part of the active proof surface.
 -/
 namespace Tamago.Proof.Utils.ClzProof
 
@@ -3778,22 +3774,19 @@ theorem fixedPointMathLib_cbrt_input_lt_next_cube_holds (x : Uint256) (s : Contr
     (cbrt_returns_math_floor x s).2
 
 -- tama: discharges=fixedPointMathLib_clz_zero_returns_256
--- CLZ semantics now from Tamago.Common.ClzIntrinsic (consumer axiom clz_matches_eip7939)
+-- CLZ semantics come from Tamago.Common.ClzIntrinsic.
 theorem fixedPointMathLib_clz_zero_returns_256_holds (x : Uint256) (s : ContractState) :
     fixedPointMathLib_clz_zero_returns_256 x ((clz x).run s).fst := by
   intro hZero
-  -- Derived from intrinsic semantics (replaces old ClzProof.clz_run_val)
   simp [clz, Tamago.Utils.FixedPointMathLibBase.clz, hZero,
     Tamago.Common.ClzIntrinsic.clz, Contract.run, Verity.pure, Pure.pure, ContractResult.fst,
     Verity.Core.Uint256.modulus, Verity.Core.UINT256_MODULUS]
-  -- In full Verity intrinsic integration: by [axiom clz_matches_eip7939]; native_decide
 
 -- tama: discharges=fixedPointMathLib_clz_nonzero_returns_leading_zero_count
 theorem fixedPointMathLib_clz_nonzero_returns_leading_zero_count_holds
     (x : Uint256) (s : ContractState) :
     fixedPointMathLib_clz_nonzero_returns_leading_zero_count x ((clz x).run s).fst := by
   intro hNonzero
-  -- Derived from intrinsic semantics (replaces old ClzProof.clz_run_val)
   have hxPos : 0 < x.val := Nat.pos_of_ne_zero hNonzero
   have hxLt : x.val < 2 ^ 256 := by
     simpa [Verity.Core.Uint256.modulus, Verity.Core.UINT256_MODULUS] using x.isLt
@@ -3805,7 +3798,6 @@ theorem fixedPointMathLib_clz_nonzero_returns_leading_zero_count_holds
   simp [clz, Tamago.Utils.FixedPointMathLibBase.clz, hNonzero,
     Tamago.Common.ClzIntrinsic.clz, Contract.run, Verity.pure, Pure.pure, ContractResult.fst,
     Nat.mod_eq_of_lt hValLt]
-  -- In full Verity intrinsic integration: by [axiom clz_matches_eip7939]; native_decide
 
 -- tama: discharges=fixedPointMathLib_log2_zero_returns_zero
 theorem fixedPointMathLib_log2_zero_returns_zero_holds (x : Uint256) (s : ContractState) :

@@ -89,7 +89,7 @@ verity_contract FixedPointMathLibBase where
   @return Number of zero bits before the most significant set bit, or 256 for zero.
   -/
   function pure clz (x : Uint256) : Uint256 := do
-    return (intrinsic_fusaka "clz" clzLowering [x])
+    return (intrinsic_osaka "clz" clzLowering [x])
 
   /-
   @notice Computes the integer square root.
@@ -103,7 +103,7 @@ verity_contract FixedPointMathLibBase where
     steps yield 2⁻¹⁶⁰ relative error (>128 correct bits). We implicitly
     represent z₀ as log₂(z) so that the first `div` becomes a `shr`.
     -/
-    let xClz := intrinsic_fusaka "clz" clzLowering [x]
+    let xClz := intrinsic_osaka "clz" clzLowering [x]
     let mut z := shr 1 (sub 256 xClz)
     z := shr 1 (add (shl z 1) (shr z x))
     z := shr 1 (add z (div x z))
@@ -130,7 +130,7 @@ verity_contract FixedPointMathLibBase where
     % 3` to balance each octave's worst-case final error. This gives >94 bits of
     precision after only 5 Newton-Raphson iterations.
     -/
-    let xClz := intrinsic_fusaka "clz" clzLowering [x]
+    let xClz := intrinsic_osaka "clz" clzLowering [x]
     let b := sub 257 xClz
     let mut z := shr 7 (shl (div b 3) (add 90 (mul 26 (mod b 3))))
     z := div (add (add (div x (mul z z)) z) z) 3
